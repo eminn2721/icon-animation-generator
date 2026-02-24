@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animation Samples Preview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      padding: 16px;
+    }
+    h1 { font-size: 18px; margin-bottom: 16px; color: #fff; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .card:hover, .card.active { border-color: #fff; }
+    .card .lottie-box {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 8px;
+    }
+    .card .label {
+      font-size: 11px;
+      color: #888;
+      word-break: break-all;
+    }
+    .card .icon-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+    .card .anim-type {
+      font-size: 11px;
+      color: #7c8aff;
+    }
+    .loading { color: #555; text-align: center; padding: 40px; }
+  </style>
+</head>
+<body>
+  <h1>Sample Animations</h1>
+  <div class="grid" id="grid">
+    <div class="loading">Loading samples...</div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  <script>
+    const SAMPLES = [
+      'bell-shake', 'camera-bounce', 'clock-bounce', 'cloud-bounce',
+      'edit-draw', 'heart-draw', 'heart-fade-in', 'heart-morph',
+      'heart-pulse', 'heart-shake', 'heart-slide-in', 'heart-spin',
+      'home-slide-in', 'lock-bounce', 'mail-fade-in', 'music-bounce',
+      'search-bounce', 'settings-spin', 'star-bounce', 'trash-bounce',
+      'user-morph', 'wifi-bounce'
+    ];
+
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+
+    SAMPLES.forEach(name => {
+      const parts = name.split('-');
+      const animType = parts.pop();
+      const iconName = parts.join('-');
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="lottie-box" id="lottie-${name}"></div>
+        <div class="icon-name">${iconName}</div>
+        <div class="anim-type">${animType}</div>
+      `;
+      grid.appendChild(card);
+
+      fetch(`/api/samples/${name}.json`)
+        .then(r => r.json())
+        .then(data => {
+          lottie.loadAnimation({
+            container: document.getElementById(`lottie-${name}`),
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            animationData: data
+          });
+        })
+        .catch(() => {
+          card.querySelector('.label').textContent = 'Load error';
+        });
+    });
+  </script>
+</body>
+</html>

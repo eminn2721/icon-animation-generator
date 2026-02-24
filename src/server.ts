@@ -12,6 +12,7 @@ const app = express();
 
 app.use(express.json());
 app.use(express.static(path.resolve(__dirname, '../public')));
+app.use('/api/samples', express.static(path.resolve(__dirname, '../output/samples')));
 
 // --- POST /api/generate ---
 app.post('/api/generate', async (req: Request, res: Response): Promise<void> => {
