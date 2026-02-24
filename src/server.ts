@@ -4,8 +4,9 @@ import fs from 'fs';
 import { config } from './config';
 import { matchIcon } from './pipeline/icon-matcher';
 import { generateAnimation, getAvailableAnimations } from './pipeline/animation-gen';
+import { generateLocal } from './pipeline/local-gen';
 import { validateAndFix, saveLottie } from './pipeline/lottie-builder';
-import { GenerateRequest, PRESET_ANIMATIONS } from './types';
+import { GenerateRequest, PresetAnimation, PRESET_ANIMATIONS } from './types';
 
 const app = express();
 
@@ -55,13 +56,28 @@ app.post('/api/generate', async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Step 2: Generate animation via Claude
-    const { lottie: rawLottie, animationDescription } = await generateAnimation(
-      icon.svg,
-      icon.name,
-      animation,
-      options
-    );
+    // Step 2: Generate animation
+    let rawLottie: any;
+    let animationDescription: string;
+    const useCustom = !!animation.custom;
+
+    if (useCustom) {
+      // Custom animation requires Claude API
+      if (!config.anthropicApiKey) {
+        res.status(400).json({
+          success: false,
+          error: 'ANTHROPIC_API_KEY required for custom animations. Preset animations work without it.',
+        });
+        return;
+      }
+      const result = await generateAnimation(icon.svg, icon.name, animation, options);
+      rawLottie = result.lottie;
+      animationDescription = result.animationDescription;
+    } else {
+      // Preset animation — generated locally, no API key needed
+      rawLottie = generateLocal(icon.svg, animation.type as PresetAnimation, options);
+      animationDescription = animation.type!;
+    }
 
     // Step 3: Validate and save
     const lottie = validateAndFix(rawLottie, options);
