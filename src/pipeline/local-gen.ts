@@ -7,11 +7,12 @@ import { config } from '../config';
 import { PresetAnimation, LottieJSON } from '../types';
 import { svgToLottieShapes } from './svg-parser';
 
-// Cubic bezier easing presets
-const EASE_IN_OUT = { x: [0.42, 0.58], y: [0, 1] };
-const EASE_OUT = { x: [0, 0.58], y: [0, 1] };
-const EASE_IN = { x: [0.42, 1], y: [0, 1] };
-const LINEAR = { x: [0, 1], y: [0, 1] };
+// Cubic bezier easing presets — [outX, outY, inX, inY]
+// o = out-tangent (leaving current keyframe), i = in-tangent (arriving at next keyframe)
+const EASE_IN_OUT = { ox: 0.42, oy: 0, ix: 0.58, iy: 1 };
+const EASE_OUT    = { ox: 0,    oy: 0, ix: 0.58, iy: 1 };
+const EASE_IN     = { ox: 0.42, oy: 0, ix: 1,    iy: 1 };
+const LINEAR      = { ox: 0,    oy: 0, ix: 1,    iy: 1 };
 
 interface AnimationOptions {
   size: number;
@@ -19,14 +20,22 @@ interface AnimationOptions {
   loop: boolean;
 }
 
-function kf(t: number, s: number[], e?: number[], easing = EASE_IN_OUT): any {
+interface Easing {
+  ox: number;
+  oy: number;
+  ix: number;
+  iy: number;
+}
+
+function kf(t: number, s: number[], e?: number[], easing: Easing = EASE_IN_OUT): any {
   const frame: any = { t, s };
   if (e) {
     frame.e = e;
-    // Easing arrays must match the dimension count of the values
     const dim = s.length;
-    frame.i = { x: Array(dim).fill(easing.x[0]), y: Array(dim).fill(easing.y[0]) };
-    frame.o = { x: Array(dim).fill(easing.x[1]), y: Array(dim).fill(easing.y[1]) };
+    // o = out tangent (leaving this keyframe) = first bezier control point
+    // i = in tangent (arriving at next keyframe) = second bezier control point
+    frame.o = { x: Array(dim).fill(easing.ox), y: Array(dim).fill(easing.oy) };
+    frame.i = { x: Array(dim).fill(easing.ix), y: Array(dim).fill(easing.iy) };
   }
   return frame;
 }
@@ -58,9 +67,9 @@ function buildBase(svg: string, opts: AnimationOptions, name: string): any {
         ks: {
           o: { a: 0, k: 100 },
           r: { a: 0, k: 0 },
-          p: { a: 0, k: [opts.size / 2, opts.size / 2, 0] },
-          a: { a: 0, k: [12, 12, 0] }, // Lucide viewBox center
-          s: { a: 0, k: [scale, scale, 100] },
+          p: { a: 0, k: [opts.size / 2, opts.size / 2] },
+          a: { a: 0, k: [12, 12] }, // Lucide viewBox center
+          s: { a: 0, k: [scale, scale] },
         },
         shapes,
       },
@@ -72,8 +81,7 @@ function buildBase(svg: string, opts: AnimationOptions, name: string): any {
 
 function bounce(svg: string, opts: AnimationOptions): LottieJSON {
   const lottie = buildBase(svg, opts, 'bounce');
-  const fr = config.defaults.framerate;
-  const total = Math.round(opts.duration * fr);
+  const total = Math.round(opts.duration * config.defaults.framerate);
   const mid = Math.round(total * 0.4);
   const center = opts.size / 2;
   const offset = opts.size * 0.15;

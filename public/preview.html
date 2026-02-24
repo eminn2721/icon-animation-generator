@@ -60,21 +60,33 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
   <script>
     const SAMPLES = [
-      'bell-shake', 'camera-bounce', 'clock-bounce', 'cloud-bounce',
-      'edit-draw', 'heart-draw', 'heart-fade-in', 'heart-morph',
-      'heart-pulse', 'heart-shake', 'heart-slide-in', 'heart-spin',
-      'home-slide-in', 'lock-bounce', 'mail-fade-in', 'music-bounce',
-      'search-bounce', 'settings-spin', 'star-bounce', 'trash-bounce',
-      'user-morph', 'wifi-bounce'
+      'test-circle-bounce',
+      'heart-pulse', 'heart-bounce', 'heart-spin', 'heart-shake',
+      'heart-fade-in', 'heart-draw', 'heart-slide-in', 'heart-morph',
+      'settings-spin', 'bell-shake', 'star-bounce', 'trash-bounce',
+      'home-slide-in', 'mail-fade-in', 'camera-bounce', 'cloud-bounce',
+      'clock-bounce', 'edit-draw', 'lock-bounce', 'music-bounce',
+      'search-bounce', 'user-morph', 'wifi-bounce', 'rocket-slide-in'
     ];
 
     const grid = document.getElementById('grid');
     grid.innerHTML = '';
 
     SAMPLES.forEach(name => {
-      const parts = name.split('-');
-      const animType = parts.pop();
-      const iconName = parts.join('-');
+      // Split: last segment(s) form animation type, first segment is the icon
+      // Known animation types with hyphens: slide-in, fade-in
+      let iconName, animType;
+      if (name.includes('-slide-in')) {
+        iconName = name.replace(/-slide-in$/, '');
+        animType = 'slide-in';
+      } else if (name.includes('-fade-in')) {
+        iconName = name.replace(/-fade-in$/, '');
+        animType = 'fade-in';
+      } else {
+        const parts = name.split('-');
+        animType = parts.pop();
+        iconName = parts.join('-');
+      }
 
       const card = document.createElement('div');
       card.className = 'card';
