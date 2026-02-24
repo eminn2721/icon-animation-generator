@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "tsc && node dist/server.js"
+    "dev": "tsc && node dist/server.js",
+    "tunnel": "npx cloudflared tunnel --url http://localhost:3000"
   },
   "repository": {
     "type": "git",
