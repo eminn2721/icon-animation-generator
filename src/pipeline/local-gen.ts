@@ -237,6 +237,120 @@ function morph(svg: string, opts: AnimationOptions): LottieJSON {
   return lottie;
 }
 
+function shine(svg: string, opts: AnimationOptions): LottieJSON {
+  const lottie = buildBase(svg, opts, 'shine');
+  const total = Math.round(opts.duration * config.defaults.framerate);
+  // Delay before shine starts (20% of duration)
+  const delayFrame = Math.round(total * 0.2);
+  // Shine sweep takes 60% of duration
+  const sweepEnd = Math.round(total * 0.8);
+
+  // Create a diagonal white band that sweeps left → right across the icon
+  // Icon is 24x24 in Lucide coordinate space
+  const shineGroup = {
+    ty: 'gr',
+    nm: 'Shine Band',
+    it: [
+      // Tall thin rectangle — taller than icon so diagonal rotation still covers
+      {
+        ty: 'rc',
+        nm: 'Band',
+        p: { a: 0, k: [0, 0] },
+        s: { a: 0, k: [3, 40] },
+        r: { a: 0, k: 0 },
+      },
+      // White fill
+      {
+        ty: 'fl',
+        nm: 'Shine Fill',
+        c: { a: 0, k: [1, 1, 1, 1] },
+        o: { a: 0, k: 100 },
+        r: 1,
+      },
+      // Transform: rotated 25deg, animated position sweep, opacity fade in/out
+      {
+        ty: 'tr',
+        nm: 'Transform',
+        p: {
+          a: 1,
+          k: [
+            kf(0, [-16, 12], [-16, 12], LINEAR),          // hold off-screen left
+            kf(delayFrame, [-16, 12], [28, 12], EASE_OUT), // sweep to right
+            kf(sweepEnd, [28, 12], [28, 12], LINEAR),      // arrive off-screen right
+            kf(total, [28, 12]),                            // hold
+          ],
+        },
+        a: { a: 0, k: [0, 0] },
+        s: { a: 0, k: [100, 100] },
+        r: { a: 0, k: 25 }, // diagonal tilt
+        o: {
+          a: 1,
+          k: [
+            kf(0, [0], [0], LINEAR),                       // invisible during delay
+            kf(delayFrame, [0], [70], EASE_IN),             // fade in at sweep start
+            kf(Math.round((delayFrame + sweepEnd) / 2), [70], [70], LINEAR), // hold bright
+            kf(sweepEnd, [70], [0], EASE_OUT),              // fade out at sweep end
+            kf(total, [0]),
+          ],
+        },
+      },
+    ],
+  };
+
+  // Add a second thinner band for a richer look
+  const shineGroup2 = {
+    ty: 'gr',
+    nm: 'Shine Band 2',
+    it: [
+      {
+        ty: 'rc',
+        nm: 'Band',
+        p: { a: 0, k: [0, 0] },
+        s: { a: 0, k: [1.5, 40] },
+        r: { a: 0, k: 0 },
+      },
+      {
+        ty: 'fl',
+        nm: 'Shine Fill',
+        c: { a: 0, k: [1, 1, 1, 1] },
+        o: { a: 0, k: 100 },
+        r: 1,
+      },
+      {
+        ty: 'tr',
+        nm: 'Transform',
+        p: {
+          a: 1,
+          k: [
+            kf(0, [-12, 12], [-12, 12], LINEAR),
+            kf(delayFrame, [-12, 12], [32, 12], EASE_OUT),
+            kf(sweepEnd, [32, 12], [32, 12], LINEAR),
+            kf(total, [32, 12]),
+          ],
+        },
+        a: { a: 0, k: [0, 0] },
+        s: { a: 0, k: [100, 100] },
+        r: { a: 0, k: 25 },
+        o: {
+          a: 1,
+          k: [
+            kf(0, [0], [0], LINEAR),
+            kf(delayFrame, [0], [40], EASE_IN),
+            kf(Math.round((delayFrame + sweepEnd) / 2), [40], [40], LINEAR),
+            kf(sweepEnd, [40], [0], EASE_OUT),
+            kf(total, [0]),
+          ],
+        },
+      },
+    ],
+  };
+
+  // Insert shine bands at the start of shapes array (renders on top)
+  lottie.layers[0]!.shapes.unshift(shineGroup2, shineGroup);
+
+  return lottie;
+}
+
 const GENERATORS: Record<PresetAnimation, (svg: string, opts: AnimationOptions) => LottieJSON> = {
   bounce,
   spin,
@@ -246,6 +360,7 @@ const GENERATORS: Record<PresetAnimation, (svg: string, opts: AnimationOptions) 
   draw,
   'slide-in': slideIn,
   morph,
+  shine,
 };
 
 /**

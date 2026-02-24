@@ -9,6 +9,7 @@ export const PRESET_ANIMATIONS = [
   'draw',
   'slide-in',
   'morph',
+  'shine',
 ] as const;
 
 export type PresetAnimation = (typeof PRESET_ANIMATIONS)[number];

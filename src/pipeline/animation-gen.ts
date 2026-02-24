@@ -19,6 +19,7 @@ const PRESET_DESCRIPTIONS: Record<PresetAnimation, string> = {
   draw: 'The icon paths are drawn progressively using stroke-dashoffset animation, as if being drawn by hand from start to finish.',
   'slide-in': 'The icon slides in from the left side, moving from off-screen to its final centered position.',
   morph: 'The icon paths subtly morph/transform their shapes, creating a fluid organic movement.',
+  shine: 'A bright diagonal light band sweeps across the icon from left to right, creating a shimmer/gleam effect.',
 };
 
 function buildPrompt(svg: string, animation: AnimationInput, options: GenerateOptions): string {
