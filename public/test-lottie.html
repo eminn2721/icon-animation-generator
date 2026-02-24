@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lottie Test - Standalone Validation</title>
+<style>
+  body { font-family: system-ui; background: #111; color: #eee; padding: 20px; }
+  h1 { font-size: 18px; }
+  .test-grid { display: flex; flex-wrap: wrap; gap: 20px; }
+  .test-card { background: #222; border: 1px solid #444; border-radius: 12px; padding: 16px; text-align: center; width: 200px; }
+  .test-card h3 { font-size: 14px; margin: 0 0 8px; }
+  .lottie-container { width: 128px; height: 128px; margin: 0 auto; background: #333; border-radius: 8px; }
+  .status { font-size: 12px; margin-top: 8px; }
+  .ok { color: #4f4; }
+  .fail { color: #f44; }
+  #drop-zone { border: 2px dashed #555; border-radius: 12px; padding: 40px; text-align: center; margin-top: 20px; }
+  #drop-zone.dragover { border-color: #7c8aff; background: #1a1a3a; }
+  #custom-player { width: 200px; height: 200px; margin: 20px auto; background: #333; border-radius: 8px; }
+</style>
+</head>
+<body>
+<h1>Lottie Validation Tests</h1>
+<p>Bu sayfa dogrudan tarayicida acilir, sunucu gerektirmez.</p>
+
+<div class="test-grid" id="test-grid"></div>
+
+<div id="drop-zone">
+  <p>JSON dosyasini buraya surukle veya tikla</p>
+  <input type="file" id="file-input" accept=".json" style="display:none">
+</div>
+<div id="custom-player"></div>
+<div id="custom-status" class="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script>
+// --- Test 1: Simple circle bounce (hand-crafted, known-good) ---
+const TEST_CIRCLE = {
+  "v": "5.7.1", "fr": 30, "ip": 0, "op": 60, "w": 200, "h": 200,
+  "nm": "test-circle", "ddd": 0,
+  "layers": [{
+    "ddd": 0, "ty": 4, "nm": "Circle", "ind": 0,
+    "ip": 0, "op": 60, "st": 0,
+    "ks": {
+      "o": { "a": 0, "k": 100 },
+      "r": { "a": 0, "k": 0 },
+      "p": {
+        "a": 1,
+        "k": [
+          { "t": 0, "s": [100, 100], "e": [100, 50],
+            "o": { "x": [0, 0], "y": [0, 0] },
+            "i": { "x": [0.58, 0.58], "y": [1, 1] } },
+          { "t": 15, "s": [100, 50], "e": [100, 100],
+            "o": { "x": [0.42, 0.42], "y": [0, 0] },
+            "i": { "x": [1, 1], "y": [1, 1] } },
+          { "t": 30, "s": [100, 100], "e": [100, 50],
+            "o": { "x": [0, 0], "y": [0, 0] },
+            "i": { "x": [0.58, 0.58], "y": [1, 1] } },
+          { "t": 45, "s": [100, 50], "e": [100, 100],
+            "o": { "x": [0.42, 0.42], "y": [0, 0] },
+            "i": { "x": [1, 1], "y": [1, 1] } },
+          { "t": 60, "s": [100, 100] }
+        ]
+      },
+      "a": { "a": 0, "k": [0, 0] },
+      "s": { "a": 0, "k": [100, 100] }
+    },
+    "shapes": [{
+      "ty": "gr", "nm": "Circle",
+      "it": [
+        { "ty": "el", "nm": "E", "p": { "a": 0, "k": [0, 0] }, "s": { "a": 0, "k": [60, 60] } },
+        { "ty": "fl", "nm": "F", "c": { "a": 0, "k": [0.2, 0.5, 0.9, 1] }, "o": { "a": 0, "k": 100 }, "r": 1 },
+        { "ty": "tr", "p": { "a": 0, "k": [0, 0] }, "a": { "a": 0, "k": [0, 0] },
+          "s": { "a": 0, "k": [100, 100] }, "r": { "a": 0, "k": 0 }, "o": { "a": 0, "k": 100 } }
+      ]
+    }]
+  }]
+};
+
+// --- Test 2: Spinning rectangle (tests rotation) ---
+const TEST_SPIN = {
+  "v": "5.7.1", "fr": 30, "ip": 0, "op": 60, "w": 200, "h": 200,
+  "nm": "test-spin", "ddd": 0,
+  "layers": [{
+    "ddd": 0, "ty": 4, "nm": "Rect", "ind": 0,
+    "ip": 0, "op": 60, "st": 0,
+    "ks": {
+      "o": { "a": 0, "k": 100 },
+      "r": { "a": 1, "k": [
+        { "t": 0, "s": [0], "e": [360], "o": { "x": [0], "y": [0] }, "i": { "x": [1], "y": [1] } },
+        { "t": 60, "s": [360] }
+      ]},
+      "p": { "a": 0, "k": [100, 100] },
+      "a": { "a": 0, "k": [0, 0] },
+      "s": { "a": 0, "k": [100, 100] }
+    },
+    "shapes": [{
+      "ty": "gr", "nm": "Rect",
+      "it": [
+        { "ty": "rc", "nm": "R", "p": { "a": 0, "k": [0, 0] }, "s": { "a": 0, "k": [60, 60] }, "r": { "a": 0, "k": 8 } },
+        { "ty": "fl", "nm": "F", "c": { "a": 0, "k": [0.9, 0.3, 0.2, 1] }, "o": { "a": 0, "k": 100 }, "r": 1 },
+        { "ty": "tr", "p": { "a": 0, "k": [0, 0] }, "a": { "a": 0, "k": [0, 0] },
+          "s": { "a": 0, "k": [100, 100] }, "r": { "a": 0, "k": 0 }, "o": { "a": 0, "k": 100 } }
+      ]
+    }]
+  }]
+};
+
+// --- Test 3: Scale pulse (tests scale animation) ---
+const TEST_PULSE = {
+  "v": "5.7.1", "fr": 30, "ip": 0, "op": 60, "w": 200, "h": 200,
+  "nm": "test-pulse", "ddd": 0,
+  "layers": [{
+    "ddd": 0, "ty": 4, "nm": "Star", "ind": 0,
+    "ip": 0, "op": 60, "st": 0,
+    "ks": {
+      "o": { "a": 0, "k": 100 },
+      "r": { "a": 0, "k": 0 },
+      "p": { "a": 0, "k": [100, 100] },
+      "a": { "a": 0, "k": [0, 0] },
+      "s": { "a": 1, "k": [
+        { "t": 0, "s": [100, 100], "e": [130, 130],
+          "o": { "x": [0.42, 0.42], "y": [0, 0] }, "i": { "x": [0.58, 0.58], "y": [1, 1] } },
+        { "t": 30, "s": [130, 130], "e": [100, 100],
+          "o": { "x": [0.42, 0.42], "y": [0, 0] }, "i": { "x": [0.58, 0.58], "y": [1, 1] } },
+        { "t": 60, "s": [100, 100] }
+      ]}
+    },
+    "shapes": [{
+      "ty": "gr", "nm": "Star",
+      "it": [
+        { "ty": "sr", "nm": "S", "sy": 1, "p": { "a": 0, "k": [0, 0] },
+          "or": { "a": 0, "k": 40 }, "ir": { "a": 0, "k": 20 },
+          "pt": { "a": 0, "k": 5 }, "r": { "a": 0, "k": 0 },
+          "os": { "a": 0, "k": 0 }, "is": { "a": 0, "k": 0 } },
+        { "ty": "fl", "nm": "F", "c": { "a": 0, "k": [1, 0.8, 0, 1] }, "o": { "a": 0, "k": 100 }, "r": 1 },
+        { "ty": "tr", "p": { "a": 0, "k": [0, 0] }, "a": { "a": 0, "k": [0, 0] },
+          "s": { "a": 0, "k": [100, 100] }, "r": { "a": 0, "k": 0 }, "o": { "a": 0, "k": 100 } }
+      ]
+    }]
+  }]
+};
+
+// --- Test 4: Bezier path with stroke (tests sh type - like our SVG-parsed shapes) ---
+const TEST_PATH = {
+  "v": "5.7.1", "fr": 30, "ip": 0, "op": 60, "w": 200, "h": 200,
+  "nm": "test-path", "ddd": 0,
+  "layers": [{
+    "ddd": 0, "ty": 4, "nm": "Heart", "ind": 0,
+    "ip": 0, "op": 60, "st": 0,
+    "ks": {
+      "o": { "a": 0, "k": 100 },
+      "r": { "a": 0, "k": 0 },
+      "p": { "a": 0, "k": [100, 100] },
+      "a": { "a": 0, "k": [12, 12] },
+      "s": { "a": 1, "k": [
+        { "t": 0, "s": [600, 600], "e": [720, 720],
+          "o": { "x": [0.42, 0.42], "y": [0, 0] }, "i": { "x": [0.58, 0.58], "y": [1, 1] } },
+        { "t": 30, "s": [720, 720], "e": [600, 600],
+          "o": { "x": [0.42, 0.42], "y": [0, 0] }, "i": { "x": [0.58, 0.58], "y": [1, 1] } },
+        { "t": 60, "s": [600, 600] }
+      ]}
+    },
+    "shapes": [{
+      "ty": "gr", "nm": "Path 1",
+      "it": [
+        { "ty": "sh", "nm": "Path", "ks": { "a": 0, "k": {
+          "v": [[12, 19.5], [4.5, 12], [12, 5], [19.5, 12]],
+          "i": [[3, 3], [0, -3], [-3, -3], [0, 3]],
+          "o": [[-3, 3], [0, -3], [3, -3], [0, 3]],
+          "c": true
+        }}},
+        { "ty": "st", "nm": "Stroke",
+          "c": { "a": 0, "k": [0.9, 0.2, 0.3, 1] },
+          "o": { "a": 0, "k": 100 },
+          "w": { "a": 0, "k": 1.5 },
+          "lc": 2, "lj": 2, "ml": 4 },
+        { "ty": "fl", "nm": "Fill",
+          "c": { "a": 0, "k": [0.9, 0.2, 0.3, 1] },
+          "o": { "a": 0, "k": 40 }, "r": 1 },
+        { "ty": "tr", "p": { "a": 0, "k": [0, 0] }, "a": { "a": 0, "k": [0, 0] },
+          "s": { "a": 0, "k": [100, 100] }, "r": { "a": 0, "k": 0 }, "o": { "a": 0, "k": 100 } }
+      ]
+    }]
+  }]
+};
+
+const TESTS = [
+  { name: 'Circle Bounce', data: TEST_CIRCLE },
+  { name: 'Rect Spin', data: TEST_SPIN },
+  { name: 'Star Pulse', data: TEST_PULSE },
+  { name: 'Heart Path', data: TEST_PATH },
+];
+
+const grid = document.getElementById('test-grid');
+
+TESTS.forEach((test, i) => {
+  const card = document.createElement('div');
+  card.className = 'test-card';
+  card.innerHTML = `<h3>${test.name}</h3><div class="lottie-container" id="test-${i}"></div><div class="status" id="status-${i}">Loading...</div>`;
+  grid.appendChild(card);
+
+  try {
+    const anim = lottie.loadAnimation({
+      container: document.getElementById('test-' + i),
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      animationData: test.data
+    });
+    anim.addEventListener('DOMLoaded', () => {
+      document.getElementById('status-' + i).innerHTML = '<span class="ok">OK - Rendering</span>';
+    });
+    anim.addEventListener('error', () => {
+      document.getElementById('status-' + i).innerHTML = '<span class="fail">RENDER ERROR</span>';
+    });
+  } catch (e) {
+    document.getElementById('status-' + i).innerHTML = '<span class="fail">LOAD ERROR: ' + e.message + '</span>';
+  }
+});
+
+// --- Drag & drop zone ---
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const customPlayer = document.getElementById('custom-player');
+const customStatus = document.getElementById('custom-status');
+let customAnim = null;
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) loadFile(file);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      customStatus.innerHTML = 'Loaded: ' + file.name + ' (' + Math.round(file.size/1024) + 'KB)';
+      if (customAnim) customAnim.destroy();
+      customAnim = lottie.loadAnimation({
+        container: customPlayer,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        animationData: data
+      });
+      customAnim.addEventListener('DOMLoaded', () => {
+        customStatus.innerHTML += ' - <span class="ok">OK Rendering!</span>';
+      });
+      customAnim.addEventListener('error', () => {
+        customStatus.innerHTML += ' - <span class="fail">RENDER ERROR</span>';
+      });
+    } catch (err) {
+      customStatus.innerHTML = '<span class="fail">JSON Parse Error: ' + err.message + '</span>';
+    }
+  };
+  reader.readAsText(file);
+}
+</script>
+</body>
+</html>
