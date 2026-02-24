@@ -23,13 +23,15 @@ function kf(t: number, s: number[], e?: number[], easing = EASE_IN_OUT): any {
   const frame: any = { t, s };
   if (e) {
     frame.e = e;
-    frame.i = { x: easing.x, y: easing.y };
-    frame.o = { x: easing.x.map(v => 1 - v), y: easing.y.map(v => 1 - v) };
+    // Easing arrays must match the dimension count of the values
+    const dim = s.length;
+    frame.i = { x: Array(dim).fill(easing.x[0]), y: Array(dim).fill(easing.y[0]) };
+    frame.o = { x: Array(dim).fill(easing.x[1]), y: Array(dim).fill(easing.y[1]) };
   }
   return frame;
 }
 
-function buildBase(svg: string, opts: AnimationOptions, name: string): LottieJSON {
+function buildBase(svg: string, opts: AnimationOptions, name: string): any {
   const fr = config.defaults.framerate;
   const totalFrames = Math.round(opts.duration * fr);
   const scale = (opts.size / 24) * 100; // Lucide icons are 24x24
@@ -43,10 +45,12 @@ function buildBase(svg: string, opts: AnimationOptions, name: string): LottieJSO
     w: opts.size,
     h: opts.size,
     nm: name,
+    ddd: 0,
     layers: [
       {
+        ddd: 0,
         ty: 4, // shape layer
-        nm: 'icon',
+        nm: 'Icon Layer',
         ind: 0,
         ip: 0,
         op: totalFrames,
@@ -54,9 +58,9 @@ function buildBase(svg: string, opts: AnimationOptions, name: string): LottieJSO
         ks: {
           o: { a: 0, k: 100 },
           r: { a: 0, k: 0 },
-          p: { a: 0, k: [opts.size / 2, opts.size / 2] },
-          a: { a: 0, k: [12, 12] }, // Lucide viewBox center
-          s: { a: 0, k: [scale, scale] },
+          p: { a: 0, k: [opts.size / 2, opts.size / 2, 0] },
+          a: { a: 0, k: [12, 12, 0] }, // Lucide viewBox center
+          s: { a: 0, k: [scale, scale, 100] },
         },
         shapes,
       },
@@ -162,6 +166,7 @@ function draw(svg: string, opts: AnimationOptions): LottieJSON {
   if (layer.shapes) {
     layer.shapes.push({
       ty: 'tm', // trim paths
+      nm: 'Trim Paths',
       s: { a: 0, k: 0 },  // start: 0%
       e: {
         a: 1,

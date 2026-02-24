@@ -1,21 +1,10 @@
 /**
- * SVG path data → Lottie shape converter (minimal subset for Lucide icons)
- * Handles M, L, C, A, Z commands and <circle> elements.
+ * SVG → Lottie shape converter for Lucide icons.
+ * Produces valid Lottie shape groups compatible with lottie-web.
  */
 
-interface LottieShapeGroup {
-  ty: 'gr';
-  nm: string;
-  it: any[];
-}
-
-interface Point {
-  x: number;
-  y: number;
-}
-
 /**
- * Parse an SVG path "d" attribute into Lottie shape vertices.
+ * Parse an SVG path "d" attribute into Lottie bezier vertices.
  */
 function parsePathToVertices(d: string): { v: number[][]; i: number[][]; o: number[][]; c: boolean } {
   const vertices: number[][] = [];
@@ -26,7 +15,6 @@ function parsePathToVertices(d: string): { v: number[][]; i: number[][]; o: numb
   let startX = 0, startY = 0;
   let closed = false;
 
-  // Tokenize: split into commands + numbers
   const tokens = d.match(/[a-zA-Z]|[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?/g) || [];
   let idx = 0;
 
@@ -44,19 +32,16 @@ function parsePathToVertices(d: string): { v: number[][]; i: number[][]; o: numb
     const cmd = tokens[idx]!;
     if (/[a-zA-Z]/.test(cmd)) {
       idx++;
-
       switch (cmd) {
         case 'M':
           cx = nextNum(); cy = nextNum();
           startX = cx; startY = cy;
           addVertex(cx, cy);
-          // Implicit lineto after M
           while (idx < tokens.length && !/[a-zA-Z]/.test(tokens[idx]!)) {
             cx = nextNum(); cy = nextNum();
             addVertex(cx, cy);
           }
           break;
-
         case 'm':
           cx += nextNum(); cy += nextNum();
           startX = cx; startY = cy;
@@ -66,64 +51,48 @@ function parsePathToVertices(d: string): { v: number[][]; i: number[][]; o: numb
             addVertex(cx, cy);
           }
           break;
-
         case 'L':
           while (idx < tokens.length && !/[a-zA-Z]/.test(tokens[idx]!)) {
-            cx = nextNum(); cy = nextNum();
-            addVertex(cx, cy);
+            cx = nextNum(); cy = nextNum(); addVertex(cx, cy);
           }
           break;
-
         case 'l':
           while (idx < tokens.length && !/[a-zA-Z]/.test(tokens[idx]!)) {
-            cx += nextNum(); cy += nextNum();
-            addVertex(cx, cy);
+            cx += nextNum(); cy += nextNum(); addVertex(cx, cy);
           }
           break;
-
         case 'H':
           while (idx < tokens.length && !/[a-zA-Z]/.test(tokens[idx]!)) {
-            cx = nextNum();
-            addVertex(cx, cy);
+            cx = nextNum(); addVertex(cx, cy);
           }
           break;
-
         case 'h':
           while (idx < tokens.length && !/[a-zA-Z]/.test(tokens[idx]!)) {
-            cx += nextNum();
-            addVertex(cx, cy);
+            cx += nextNum(); addVertex(cx, cy);
           }
           break;
-
         case 'V':
           while (idx < tokens.length && !/[a-zA-Z]/.test(tokens[idx]!)) {
-            cy = nextNum();
-            addVertex(cx, cy);
+            cy = nextNum(); addVertex(cx, cy);
           }
           break;
-
         case 'v':
           while (idx < tokens.length && !/[a-zA-Z]/.test(tokens[idx]!)) {
-            cy += nextNum();
-            addVertex(cx, cy);
+            cy += nextNum(); addVertex(cx, cy);
           }
           break;
-
         case 'C':
           while (idx < tokens.length && !/[a-zA-Z]/.test(tokens[idx]!)) {
             const c1x = nextNum(), c1y = nextNum();
             const c2x = nextNum(), c2y = nextNum();
             const ex = nextNum(), ey = nextNum();
-            // Set out-tangent on previous vertex
             if (outTangents.length > 0) {
               outTangents[outTangents.length - 1] = [c1x - cx, c1y - cy];
             }
-            // Add end vertex with in-tangent
             addVertex(ex, ey, c2x - ex, c2y - ey, 0, 0);
             cx = ex; cy = ey;
           }
           break;
-
         case 'c':
           while (idx < tokens.length && !/[a-zA-Z]/.test(tokens[idx]!)) {
             const dc1x = nextNum(), dc1y = nextNum();
@@ -132,21 +101,14 @@ function parsePathToVertices(d: string): { v: number[][]; i: number[][]; o: numb
             if (outTangents.length > 0) {
               outTangents[outTangents.length - 1] = [dc1x, dc1y];
             }
-            const ex = cx + dx, ey = cy + dy;
-            addVertex(ex, ey, dc2x - dx, dc2y - dy, 0, 0);
-            cx = ex; cy = ey;
+            const ex2 = cx + dx, ey2 = cy + dy;
+            addVertex(ex2, ey2, dc2x - dx, dc2y - dy, 0, 0);
+            cx = ex2; cy = ey2;
           }
           break;
-
-        case 'A':
-        case 'a': {
-          // Approximate arcs as lines (good enough for small arcs in icons)
+        case 'A': case 'a': {
           while (idx < tokens.length && !/[a-zA-Z]/.test(tokens[idx]!)) {
-            nextNum(); // rx
-            nextNum(); // ry
-            nextNum(); // x-rotation
-            nextNum(); // large-arc
-            nextNum(); // sweep
+            nextNum(); nextNum(); nextNum(); nextNum(); nextNum();
             const ex = cmd === 'A' ? nextNum() : cx + nextNum();
             const ey = cmd === 'A' ? nextNum() : cy + nextNum();
             addVertex(ex, ey);
@@ -154,174 +116,122 @@ function parsePathToVertices(d: string): { v: number[][]; i: number[][]; o: numb
           }
           break;
         }
-
-        case 'Z':
-        case 'z':
+        case 'Z': case 'z':
           closed = true;
           cx = startX; cy = startY;
           break;
       }
     } else {
-      idx++; // skip unexpected token
+      idx++;
     }
   }
 
+  return { v: vertices, i: inTangents, o: outTangents, c: closed };
+}
+
+/** Standard stroke style for Lucide icons */
+function makeStroke(): any {
   return {
-    v: vertices,
-    i: inTangents,
-    o: outTangents,
-    c: closed,
+    ty: 'st',
+    nm: 'Stroke',
+    c: { a: 0, k: [0, 0, 0, 1] },
+    o: { a: 0, k: 100 },
+    w: { a: 0, k: 2 },
+    lc: 2,
+    lj: 2,
+    ml: 4,
   };
 }
 
-/**
- * Convert a <circle> element to Lottie ellipse shape.
- */
-function circleToLottieShape(cx: number, cy: number, r: number, index: number): LottieShapeGroup {
+/** Standard group transform (identity) */
+function makeGroupTransform(): any {
+  return {
+    ty: 'tr',
+    nm: 'Transform',
+    p: { a: 0, k: [0, 0] },
+    a: { a: 0, k: [0, 0] },
+    s: { a: 0, k: [100, 100] },
+    r: { a: 0, k: 0 },
+    o: { a: 0, k: 100 },
+  };
+}
+
+function makeGroup(name: string, items: any[]): any {
+  const it = [...items, makeStroke(), makeGroupTransform()];
   return {
     ty: 'gr',
-    nm: `circle-${index}`,
-    it: [
-      {
-        ty: 'el', // ellipse
-        p: { a: 0, k: [cx, cy] },
-        s: { a: 0, k: [r * 2, r * 2] },
-      },
-      {
-        ty: 'st', // stroke
-        c: { a: 0, k: [0, 0, 0, 1] },
-        o: { a: 0, k: 100 },
-        w: { a: 0, k: 2 },
-        lc: 2, // round cap
-        lj: 2, // round join
-      },
-      {
-        ty: 'tr', // transform
-        p: { a: 0, k: [0, 0] },
-        a: { a: 0, k: [0, 0] },
-        s: { a: 0, k: [100, 100] },
-        r: { a: 0, k: 0 },
-        o: { a: 0, k: 100 },
-      },
-    ],
+    nm: name,
+    np: it.length,
+    it,
   };
 }
 
-/**
- * Convert a <path d="..."> to Lottie shape group.
- */
-function pathToLottieShape(d: string, index: number): LottieShapeGroup {
+function pathToGroup(d: string, index: number): any {
   const verts = parsePathToVertices(d);
-  return {
-    ty: 'gr',
-    nm: `path-${index}`,
-    it: [
-      {
-        ty: 'sh', // shape/path
-        ks: {
-          a: 0,
-          k: verts,
-        },
-      },
-      {
-        ty: 'st', // stroke
-        c: { a: 0, k: [0, 0, 0, 1] },
-        o: { a: 0, k: 100 },
-        w: { a: 0, k: 2 },
-        lc: 2,
-        lj: 2,
-      },
-      {
-        ty: 'tr', // transform
-        p: { a: 0, k: [0, 0] },
-        a: { a: 0, k: [0, 0] },
-        s: { a: 0, k: [100, 100] },
-        r: { a: 0, k: 0 },
-        o: { a: 0, k: 100 },
-      },
-    ],
-  };
+  return makeGroup(`Path ${index + 1}`, [
+    {
+      ty: 'sh',
+      nm: `Path`,
+      ks: { a: 0, k: verts },
+    },
+  ]);
+}
+
+function circleToGroup(cx: number, cy: number, r: number, index: number): any {
+  return makeGroup(`Ellipse ${index + 1}`, [
+    {
+      ty: 'el',
+      nm: 'Ellipse',
+      p: { a: 0, k: [cx, cy] },
+      s: { a: 0, k: [r * 2, r * 2] },
+    },
+  ]);
 }
 
 /**
  * Parse all shapes from an SVG string into Lottie shape groups.
  */
-export function svgToLottieShapes(svg: string): LottieShapeGroup[] {
-  const shapes: LottieShapeGroup[] = [];
+export function svgToLottieShapes(svg: string): any[] {
+  const shapes: any[] = [];
   let index = 0;
-
-  // Extract <path d="..."> elements
-  const pathRegex = /<path\s[^>]*d="([^"]+)"[^>]*\/?>/g;
   let match;
+
+  // <path d="...">
+  const pathRegex = /<path\s[^>]*d="([^"]+)"[^>]*\/?>/g;
   while ((match = pathRegex.exec(svg)) !== null) {
-    shapes.push(pathToLottieShape(match[1]!, index++));
+    shapes.push(pathToGroup(match[1]!, index++));
   }
 
-  // Extract <circle cx="..." cy="..." r="..."> elements
+  // <circle cx cy r>
   const circleRegex = /<circle\s[^>]*cx="([^"]+)"[^>]*cy="([^"]+)"[^>]*r="([^"]+)"[^>]*\/?>/g;
   while ((match = circleRegex.exec(svg)) !== null) {
-    shapes.push(circleToLottieShape(
-      parseFloat(match[1]!),
-      parseFloat(match[2]!),
-      parseFloat(match[3]!),
-      index++
-    ));
+    shapes.push(circleToGroup(parseFloat(match[1]!), parseFloat(match[2]!), parseFloat(match[3]!), index++));
   }
 
-  // Also try alternate attribute order for circle
-  const circleRegex2 = /<circle\s[^>]*r="([^"]+)"[^>]*cx="([^"]+)"[^>]*cy="([^"]+)"[^>]*\/?>/g;
-  while ((match = circleRegex2.exec(svg)) !== null) {
-    shapes.push(circleToLottieShape(
-      parseFloat(match[2]!),
-      parseFloat(match[3]!),
-      parseFloat(match[1]!),
-      index++
-    ));
-  }
-
-  // Extract <line x1 y1 x2 y2>
+  // <line x1 y1 x2 y2>
   const lineRegex = /<line\s[^>]*x1="([^"]+)"[^>]*y1="([^"]+)"[^>]*x2="([^"]+)"[^>]*y2="([^"]+)"[^>]*\/?>/g;
   while ((match = lineRegex.exec(svg)) !== null) {
-    const d = `M${match[1]} ${match[2]}L${match[3]} ${match[4]}`;
-    shapes.push(pathToLottieShape(d, index++));
+    shapes.push(pathToGroup(`M${match[1]} ${match[2]}L${match[3]} ${match[4]}`, index++));
   }
 
-  // Extract <rect x y width height rx>
+  // <rect x y width height>
   const rectRegex = /<rect\s[^>]*x="([^"]+)"[^>]*y="([^"]+)"[^>]*width="([^"]+)"[^>]*height="([^"]+)"[^>]*\/?>/g;
   while ((match = rectRegex.exec(svg)) !== null) {
     const x = parseFloat(match[1]!), y = parseFloat(match[2]!);
     const w = parseFloat(match[3]!), h = parseFloat(match[4]!);
-    shapes.push({
-      ty: 'gr',
-      nm: `rect-${index++}`,
-      it: [
-        {
-          ty: 'rc',
-          p: { a: 0, k: [x + w / 2, y + h / 2] },
-          s: { a: 0, k: [w, h] },
-          r: { a: 0, k: 0 },
-        },
-        {
-          ty: 'st',
-          c: { a: 0, k: [0, 0, 0, 1] },
-          o: { a: 0, k: 100 },
-          w: { a: 0, k: 2 },
-          lc: 2,
-          lj: 2,
-        },
-        {
-          ty: 'tr',
-          p: { a: 0, k: [0, 0] },
-          a: { a: 0, k: [0, 0] },
-          s: { a: 0, k: [100, 100] },
-          r: { a: 0, k: 0 },
-          o: { a: 0, k: 100 },
-        },
-      ],
-    });
+    shapes.push(makeGroup(`Rect ${index + 1}`, [
+      {
+        ty: 'rc',
+        nm: 'Rect',
+        p: { a: 0, k: [x + w / 2, y + h / 2] },
+        s: { a: 0, k: [w, h] },
+        r: { a: 0, k: 0 },
+      },
+    ]));
+    index++;
   }
 
-  // Extract <polyline points="..."> and <polygon points="...">
+  // <polyline> / <polygon>
   const polyRegex = /<poly(?:line|gon)\s[^>]*points="([^"]+)"[^>]*\/?>/g;
   while ((match = polyRegex.exec(svg)) !== null) {
     const pts = match[1]!.trim().split(/[\s,]+/).map(Number);
@@ -330,7 +240,7 @@ export function svgToLottieShapes(svg: string): LottieShapeGroup[] {
       d += (i === 0 ? 'M' : 'L') + pts[i] + ' ' + pts[i + 1];
     }
     if (match[0]!.startsWith('<polygon')) d += 'Z';
-    shapes.push(pathToLottieShape(d, index++));
+    shapes.push(pathToGroup(d, index++));
   }
 
   return shapes;
