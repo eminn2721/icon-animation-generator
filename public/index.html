@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Icon Animation Generator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    .container { max-width: 480px; margin: 0 auto; }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: #fff;
+    }
+    .field { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #888;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #666;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 72px;
+      font-family: inherit;
+    }
+    .hint {
+      font-size: 12px;
+      color: #555;
+      margin-top: 4px;
+    }
+    .options-row {
+      display: flex;
+      gap: 8px;
+    }
+    .options-row .field { flex: 1; }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    button:active:not(:disabled) { opacity: 0.8; }
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+    .status.loading {
+      display: block;
+      background: #1a1a2e;
+      color: #7c8aff;
+    }
+    .status.error {
+      display: block;
+      background: #2e1a1a;
+      color: #ff7c7c;
+    }
+    .status.success {
+      display: block;
+      background: #1a2e1a;
+      color: #7cff7c;
+    }
+    .preview-section {
+      margin-top: 24px;
+      display: none;
+    }
+    .preview-section.visible { display: block; }
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .preview-header h2 {
+      font-size: 16px;
+      color: #fff;
+    }
+    .preview-meta {
+      font-size: 12px;
+      color: #666;
+    }
+    .lottie-container {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 200px;
+    }
+    #lottie-player {
+      width: 128px;
+      height: 128px;
+    }
+    .download-btn {
+      margin-top: 12px;
+      background: transparent;
+      border: 1px solid #333;
+      color: #fff;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Animated Icon Generator</h1>
+
+    <div class="field">
+      <label>Keyword</label>
+      <input type="text" id="keyword" placeholder="search, settings, home..." autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Animation Type</label>
+      <select id="animationType">
+        <option value="">-- select preset --</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Custom Animation</label>
+      <textarea id="customAnimation" placeholder="e.g. rotate clockwise while fading out, then bounce back"></textarea>
+      <div class="hint">Use alone or combine with a preset. Leave empty to use only the preset.</div>
+    </div>
+
+    <div class="options-row">
+      <div class="field">
+        <label>Duration (s)</label>
+        <input type="number" id="duration" value="1" min="0.3" max="5" step="0.1">
+      </div>
+      <div class="field">
+        <label>Size (px)</label>
+        <input type="number" id="size" value="64" min="16" max="512" step="8">
+      </div>
+      <div class="field">
+        <label>Loop</label>
+        <select id="loop">
+          <option value="true" selected>Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="generateBtn" onclick="generate()">Generate</button>
+
+    <div class="status" id="status"></div>
+
+    <div class="preview-section" id="previewSection">
+      <div class="preview-header">
+        <h2>Preview</h2>
+        <span class="preview-meta" id="previewMeta"></span>
+      </div>
+      <div class="lottie-container">
+        <div id="lottie-player"></div>
+      </div>
+      <button class="download-btn" id="downloadBtn" onclick="download()">Download Lottie JSON</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  <script>
+    let currentLottie = null;
+    let currentFilename = null;
+    let lottieInstance = null;
+
+    // Load animation types
+    fetch('/api/animation-types')
+      .then(r => r.json())
+      .then(data => {
+        const sel = document.getElementById('animationType');
+        data.presets.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p;
+          opt.textContent = p;
+          sel.appendChild(opt);
+        });
+      });
+
+    function setStatus(type, msg) {
+      const el = document.getElementById('status');
+      el.className = 'status ' + type;
+      el.textContent = msg;
+    }
+
+    async function generate() {
+      const keyword = document.getElementById('keyword').value.trim();
+      const type = document.getElementById('animationType').value;
+      const custom = document.getElementById('customAnimation').value.trim();
+      const duration = parseFloat(document.getElementById('duration').value) || 1;
+      const size = parseInt(document.getElementById('size').value) || 64;
+      const loop = document.getElementById('loop').value === 'true';
+
+      if (!keyword) { setStatus('error', 'Enter a keyword'); return; }
+      if (!type && !custom) { setStatus('error', 'Select a preset or describe a custom animation'); return; }
+
+      const btn = document.getElementById('generateBtn');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      setStatus('loading', 'Matching icon and generating animation...');
+      document.getElementById('previewSection').classList.remove('visible');
+
+      try {
+        const body = {
+          keyword,
+          animation: {},
+          options: { duration, size, loop }
+        };
+        if (type) body.animation.type = type;
+        if (custom) body.animation.custom = custom;
+
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          setStatus('error', data.error);
+          return;
+        }
+
+        currentLottie = data.lottie;
+        currentFilename = data.file;
+
+        setStatus('success', `Icon: ${data.icon} | Animation: ${data.animationType}`);
+
+        // Render preview
+        const container = document.getElementById('lottie-player');
+        if (lottieInstance) lottieInstance.destroy();
+        container.innerHTML = '';
+        lottieInstance = lottie.loadAnimation({
+          container,
+          renderer: 'svg',
+          loop,
+          autoplay: true,
+          animationData: currentLottie
+        });
+
+        document.getElementById('previewMeta').textContent = data.file;
+        document.getElementById('previewSection').classList.add('visible');
+      } catch (err) {
+        setStatus('error', err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate';
+      }
+    }
+
+    function download() {
+      if (!currentLottie) return;
+      const blob = new Blob([JSON.stringify(currentLottie, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = currentFilename || 'animation.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Allow Enter key to trigger generate
+    document.getElementById('keyword').addEventListener('keydown', e => {
+      if (e.key === 'Enter') generate();
+    });
+  </script>
+</body>
+</html>
